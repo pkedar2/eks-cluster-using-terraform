@@ -169,3 +169,4 @@ resource "aws_dynamodb_table" "state_lock" {
     type = "S"
   }
 }
+#Added s3 bucket and dynamodb table for remote state management
