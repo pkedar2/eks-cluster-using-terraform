@@ -1,28 +1,34 @@
-#vpc and Networking
 provider "aws" {
-    region = "us-east-1"
+  region = var.region
 }
+
+
+# VPC & Networking
+
 
 resource "aws_vpc" "terraform" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
+  tags = {
+    Name = "eks-vpc"
+  }
 }
 
-resource "aws_subnet" "terraform_subnet1" {
-  vpc_id            = aws_vpc.terraform.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
+resource "aws_subnet" "terraform_subnet" {
+  count                   = length(var.public_subnets)
+  vpc_id                  = aws_vpc.terraform.id
+  cidr_block              = var.public_subnets[count.index]
+  availability_zone       = var.azs[count.index]
   map_public_ip_on_launch = true
-}
-
-resource "aws_subnet" "terraform_subnet2" {
-  vpc_id            = aws_vpc.terraform.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-east-1b"
-  map_public_ip_on_launch = true
+  tags = {
+    Name = "eks-subnet-${count.index + 1}"
+  }
 }
 
 resource "aws_internet_gateway" "terraform_igw" {
   vpc_id = aws_vpc.terraform.id
+  tags = {
+    Name = "eks-igw"
+  }
 }
 
 resource "aws_route_table" "rt" {
@@ -32,45 +38,52 @@ resource "aws_route_table" "rt" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.terraform_igw.id
   }
+  tags = {
+    Name = "eks-rt"
+  }
 }
 
-resource "aws_route_table_association" "rta1" {
-  subnet_id      = aws_subnet.terraform_subnet1.id
+resource "aws_route_table_association" "rta" {
+  count          = length(aws_subnet.terraform_subnet)
+  subnet_id      = aws_subnet.terraform_subnet[count.index].id
   route_table_id = aws_route_table.rt.id
 }
 
-resource "aws_route_table_association" "rta2" {
-  subnet_id      = aws_subnet.terraform_subnet2.id
-  route_table_id = aws_route_table.rt.id
-}
 
-#IAM and Policies
+# IAM Roles
+
 
 resource "aws_iam_role" "eks_cluster_role" {
   name = "eks-cluster-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
       Effect = "Allow"
-      Principal = { Service = "eks.amazonaws.com" }
+      Action = "sts:AssumeRole"
+      Principal = {
+        Service = "eks.amazonaws.com"
+      }
     }]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-    role       = aws_iam_role.eks_cluster_role.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_cluster_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 resource "aws_iam_role" "eks_node_role" {
   name = "eks-node-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
       Effect = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
+      Action = "sts:AssumeRole"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
     }]
   })
 }
@@ -81,35 +94,43 @@ resource "aws_iam_role_policy_attachment" "eks_node_policies" {
     "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
     "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
   ])
+
   role       = aws_iam_role.eks_node_role.name
   policy_arn = each.value
 }
 
-#EKS cluster and node
+
+# EKS Cluster & Nodes
+
 
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "my-eks-cluster"
+  name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster_role.arn
 
   vpc_config {
-    subnet_ids = [aws_subnet.terraform_subnet1.id, aws_subnet.terraform_subnet2.id]
+    subnet_ids = aws_subnet.terraform_subnet[*].id
   }
 }
 
 resource "aws_eks_node_group" "eks_nodes" {
-  cluster_name    = aws_eks_cluster.eks_cluster.name
-  node_role_arn   = aws_iam_role.eks_node_role.arn
-  subnet_ids      = [aws_subnet.terraform_subnet1.id, aws_subnet.terraform_subnet2.id]
-  instance_types  = ["t3.medium"]
+  cluster_name   = aws_eks_cluster.eks_cluster.name
+  node_role_arn  = aws_iam_role.eks_node_role.arn
+  subnet_ids     = aws_subnet.terraform_subnet[*].id
+  instance_types = [var.node_instance_type]
 
   scaling_config {
-    desired_size = 2
-    max_size     = 4
-    min_size     = 2
+    desired_size = var.node_desired
+    min_size     = var.node_min
+    max_size     = var.node_max
   }
+  tags = {
+  Name = "eks-worker-${count.index + 1}"
+}
 }
 
-#EC2 and sg
+
+# EC2 + Security Group
+
 
 resource "aws_security_group" "sg" {
   vpc_id = aws_vpc.terraform.id
@@ -127,47 +148,30 @@ resource "aws_security_group" "sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  tags = {
+    Name = "eks-sg"
+  }
 }
 
 resource "aws_instance" "eks" {
-  ami           = "ami-0c02fb55956c7d316"
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.terraform_subnet1.id
-  vpc_security_group_ids = [aws_security_group.sg.id]
+  ami                    = var.ec2_ami
+  instance_type           = "t2.micro"
+  subnet_id               = aws_subnet.terraform_subnet[0].id
+  vpc_security_group_ids  = [aws_security_group.sg.id]
 
   tags = {
     Name = "eks-EC2"
   }
 }
+
+
+# Outputs
+
+
 output "ec2_public_ip" {
   value = aws_instance.eks.public_ip
 }
+
 output "eks_cluster_name" {
   value = aws_eks_cluster.eks_cluster.name
 }
-
-
-terraform {
-  backend "s3" {
-    bucket         = "s3-for-state-file"
-    key            = "eks/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-state-lock"
-    encrypt        = true
-  }
-}
-
-resource "aws_s3_bucket" "state_bucket" {
-  bucket = "s3-for-state-file"
-}
-
-resource "aws_dynamodb_table" "state_lock" {
-  name         = "terraform-state-lock"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
-#Added s3 bucket and dynamodb table for remote state management

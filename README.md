@@ -1,89 +1,170 @@
+Terraform EKS Infrastructure Setup
+Overview
 
-**What this builds** 
+This repository contains a Terraform-based setup to provision AWS infrastructure and an EKS cluster in a clean, reusable, and production-aligned way.
 
-Everything is set up for the us-east-1 region. Here is the high-level infrastructure:
+The goal of this project was not just to create resources, but to design the infrastructure following real-world DevOps practices:
 
-**Networking**: A clean VPC (10.0.0.0/16) with an Internet Gateway and Route Tables. It creates two public subnets to ensure the cluster is accessible and highly available.
+Remote state management
 
-**EKS Cluster**: A cluster named my-eks-cluster.
+Reusability using variables
 
-**Worker Nodes**: A managed node group running t3.medium instances. It starts with 2 nodes and can scale up to 4 if the load gets high.
+Avoiding Terraform drift
 
-**IAM Roles**: All the necessary permissions and roles for the cluster and nodes are handled automatically.
+Understanding how EKS and autoscaling actually work
 
-**Jump Box**: A small t2.micro EC2 instance. You can use this as a bastion host or for debugging.
+Respecting cloud-native design principles
 
-**Security**: A security group that opens port 22 (SSH) so you can access the EC2 instance.
+What This Project Creates
 
-Before you start
+Using Terraform, this setup provisions:
 
-Make sure you have these tools installed locally:
+VPC
 
-**Terraform**
+Custom CIDR
 
-AWS CLI (configured with your credentials)
+Multiple public subnets across AZs
 
-How to run it :
+Internet Gateway
 
-**Init**: Open your terminal in this folder and run:
+Route table and associations
 
-$terraform init
+IAM
 
-**Plan**: check what services terraform is going to create:
+EKS cluster IAM role
 
-$$terraform plan
+EKS worker node IAM role
 
-**Deploy**: Apply the code to build the infrastructure:
+Required AWS managed policy attachments
 
-$terraform apply
+EKS
 
-(Type yes when it asks for confirmation).
+EKS cluster
 
+Managed node group with autoscaling
 
+Configurable instance type and scaling values
 
+EC2
 
-<img width="3456" height="1024" alt="image" src="https://github.com/user-attachments/assets/3f4e6b2f-9b48-4739-a0d7-70d066ddc842" />
-<img width="2866" height="608" alt="image" src="https://github.com/user-attachments/assets/fc88c552-3bc4-4093-80ad-1fd87e8e6942" />
-<img width="2974" height="836" alt="image" src="https://github.com/user-attachments/assets/d0d38a15-dfe2-4793-832a-34a69340e766" />
+Standalone EC2 instance (for testing / access / tooling)
 
-**Remote State & Locking Setup**
+Security group with SSH access
 
-S3 for remote state storage and DynamoDB for state locking. This ensures that the state file is stored securely in the cloud and prevents multiple people from running commands at the same time.
+Terraform Backend
 
-**How to Initialize **
+S3 bucket for remote state
 
-Since this project is not modulerized so S3 bucket and DynamoDB table are managed within the same code, follow these steps to avoid "Bucket Not Found" errors during the first run:
+DynamoDB table for state locking
+(created separately using a bootstrap approach)
 
-**Local Init**: Comment out the backend "s3" block in main.tf.
-
-**Provision Storage**: Run the following command to build the storage first:
-
-$terraform init
-
-$terraform apply -target=aws_s3_bucket.state_bucket -target=aws_dynamodb_table.state_lock
-
-**Enable Remote State**: Uncomment the backend "s3" block in main.tf.
-
-Migrate State: Run the final initialization to move your local state to the cloud:
-
-$terraform init
-
-(Type yes when prompted to migrate the state).
-
-Why this is important?
-
-**State Locking**: The DynamoDB table creates a lock during operations. If you try to run apply while another process is running, Terraform will block the action to prevent state corruption.
-
-Durability: S3 versioning is enabled on the bucket, allowing you to recover older versions of your infrastructure state if something goes wrong.
-
-**Troubleshooting Locks**
-
-If your process crashes and the state remains locked, you might see an error. You can manually release the lock using the ID provided in the error message:
-
-terraform force-unlock <LOCK_ID>
-
-<img width="3456" height="524" alt="image" src="https://github.com/user-attachments/assets/8aa76bfd-52e3-4763-a60d-a1b444608b0c" />
-<img width="3456" height="870" alt="image" src="https://github.com/user-attachments/assets/c14f6e47-7c4f-4c2b-8e63-29678bd3fed6" />
+Project Structure
+.
+├── main.tf            # All infrastructure resources
+├── variables.tf       # Input variables
+├── terraform.tfvars   # Environment-specific values
+├── backend.tf         # Remote state configuration
+└── README.md
 
 
+This structure keeps things simple but scalable without introducing modules prematurely.
 
+Key Design Decisions (Important)
+1. Remote State Bootstrapping
+
+S3 bucket and DynamoDB table are not created in this stack
+
+They are created separately using Terraform (bootstrap stack)
+
+This avoids circular dependencies and state issues
+
+Reason: Terraform backend must exist before terraform init.
+
+2. Reusability via Variables
+
+Hard-coded values were removed and replaced with variables:
+
+Region
+
+CIDRs
+
+Availability Zones
+
+Cluster name
+
+Instance types
+
+Node scaling values
+
+AMI ID
+
+This allows:
+
+Easy reuse across environments
+
+No code changes between dev / stage / prod
+
+3. Use of count
+
+count is used for subnets and route table associations to:
+
+Avoid duplicate resource blocks
+
+Dynamically create resources based on input lists
+
+Keep the configuration declarative and scalable
+
+4. Tagging Strategy
+
+Tags are applied consistently across resources
+
+Tags are used for ownership, environment identification, and cost tracking
+
+Resource-specific Name tags are used where human readability matters
+
+5. EKS Worker Node Naming (Important Clarification)
+
+Worker nodes are managed by Auto Scaling Groups
+
+Fixed names like eks-worker1, eks-worker2 are intentionally not used
+
+Nodes are treated as cattle, not pets
+
+Instead:
+
+EC2 Name tags are used for visibility
+
+Kubernetes labels should be used for scheduling and differentiation
+
+This aligns with how EKS is designed to work in production.
+
+How to Use This Repo
+Prerequisites
+
+AWS CLI configured
+
+Terraform installed
+
+Backend S3 bucket and DynamoDB table already created
+
+Steps
+terraform init
+terraform plan
+terraform apply
+
+
+To reuse for another environment:
+
+Copy terraform.tfvars
+
+Change values (region, CIDRs, sizes, names)
+
+Apply again
+
+Outputs
+
+After successful apply:
+
+Public IP of EC2 instance
+
+EKS cluster name
