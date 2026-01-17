@@ -174,8 +174,6 @@ Outputs
 
 After successful apply:
 
-Public IP of EC2 instance
-
 EKS cluster name
 
 <img width="3456" height="994" alt="image" src="https://github.com/user-attachments/assets/2846aed8-dc29-4cec-87b3-f8145e5e5d72" />
