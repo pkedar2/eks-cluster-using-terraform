@@ -74,7 +74,7 @@ This structure keeps things simple but scalable without introducing modules prem
 
 Key Design Decisions (Important)
 
-1. Remote State Bootstrapping 
+# 1. Remote State Bootstrapping 
 
 S3 bucket and DynamoDB table are not created in this stack
 
@@ -84,7 +84,7 @@ This avoids circular dependencies and state issues
 
 Reason: Terraform backend must exist before terraform init.
 
-2. Reusability via Variables 
+# 2. Reusability via Variables 
 
 Hard-coded values were removed and replaced with variables:
 
@@ -108,7 +108,7 @@ Easy reuse across environments
 
 No code changes between dev / stage / prod
 
-3. Use of count 
+# 3. Use of count 
 
 count is used for subnets and route table associations to:
 
@@ -118,7 +118,7 @@ Dynamically create resources based on input lists
 
 Keep the configuration declarative and scalable
 
-4. Tagging Strategy 
+# 4. Tagging Strategy 
 
 Tags are applied consistently across resources
 
@@ -126,15 +126,9 @@ Tags are used for ownership, environment identification, and cost tracking
 
 Resource-specific Name tags are used where human readability matters
 
-5. EKS Worker Node Naming (Important Clarification)
+# 5. EKS Worker Node Naming (Important Clarification)
 
 Worker nodes are managed by Auto Scaling Groups
-
-Fixed names like eks-worker1, eks-worker2 are intentionally not used
-
-Nodes are treated as cattle, not pets
-
-Instead: 
 
 EC2 Name tags are used for visibility
 
@@ -142,18 +136,20 @@ Kubernetes labels should be used for scheduling and differentiation
 
 This aligns with how EKS is designed to work in production.
 
-How to Use This Repo
-Prerequisites
+# How to Use This Repo
+
+# Prerequisites
 
 AWS CLI configured
 
 Terraform installed
 
-Backend S3 bucket and DynamoDB table already created
+Backend S3 bucket and DynamoDB table already created by using main.tf from terraform-backend.
 
 <img width="3456" height="1258" alt="image" src="https://github.com/user-attachments/assets/b3c56ef6-bc91-4071-b638-e16b2baf36cf" />
 
 <img width="3456" height="1258" alt="image" src="https://github.com/user-attachments/assets/06dc2f39-405e-4346-9bec-dd906ad8b452" />
+
 
 ```
 Steps
