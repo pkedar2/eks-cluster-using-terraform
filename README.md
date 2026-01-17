@@ -15,6 +15,9 @@ Understanding how EKS and autoscaling actually work
 
 Respecting cloud-native design principles 
 
+<img width="3420" height="1270" alt="image" src="https://github.com/user-attachments/assets/4a14271c-459b-4ba2-bd2f-6015c61caacc" />
+
+
 # What This Project Creates
 
 Using Terraform, this setup provisions:
@@ -148,6 +151,10 @@ Terraform installed
 
 Backend S3 bucket and DynamoDB table already created
 
+<img width="3456" height="1258" alt="image" src="https://github.com/user-attachments/assets/b3c56ef6-bc91-4071-b638-e16b2baf36cf" />
+
+<img width="3456" height="1258" alt="image" src="https://github.com/user-attachments/assets/06dc2f39-405e-4346-9bec-dd906ad8b452" />
+
 ```
 Steps
 terraform init
@@ -170,3 +177,12 @@ After successful apply:
 Public IP of EC2 instance
 
 EKS cluster name
+
+<img width="3456" height="994" alt="image" src="https://github.com/user-attachments/assets/2846aed8-dc29-4cec-87b3-f8145e5e5d72" />
+
+
+
+
+
+
+
