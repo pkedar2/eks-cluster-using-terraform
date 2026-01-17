@@ -5,7 +5,7 @@ This repository contains a Terraform-based setup to provision AWS infrastructure
 
 The goal of this project was not just to create resources, but to design the infrastructure following real-world DevOps practices:
 
-** Remote state management **
+**Remote state management**
 
 ** Reusability using variables **
 
