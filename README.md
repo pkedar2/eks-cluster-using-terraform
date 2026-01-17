@@ -5,72 +5,73 @@ This repository contains a Terraform-based setup to provision AWS infrastructure
 
 The goal of this project was not just to create resources, but to design the infrastructure following real-world DevOps practices:
 
-- [x] Remote state management
+** Remote state management **
 
-- [x] Reusability using variables
+** Reusability using variables **
 
-- [x] Avoiding Terraform drift
+** Avoiding Terraform drift **
 
-- [x] Understanding how EKS and autoscaling actually work
+** Understanding how EKS and autoscaling actually work **
 
-- [x] Respecting cloud-native design principles
+** Respecting cloud-native design principles **
 
-What This Project Creates
+# What This Project Creates
 
 Using Terraform, this setup provisions:
 
-VPC
+- [x] VPC
 
-Custom CIDR
+- [x] Custom CIDR
 
-Multiple public subnets across AZs
+- [x] Multiple public subnets across AZs
 
-Internet Gateway
+- [x] Internet Gateway
 
-Route table and associations
+- [x] Route table and associations
 
-IAM
+- [x] IAM
 
-EKS cluster IAM role
+- [x] EKS cluster IAM role
 
-EKS worker node IAM role
+- [x] EKS worker node IAM role
 
-Required AWS managed policy attachments
+- [x] Required AWS managed policy attachments
 
-EKS
+- [x] EKS
 
-EKS cluster
+- [x] EKS cluster
 
-Managed node group with autoscaling
+- [x] Managed node group with autoscaling
 
-Configurable instance type and scaling values
+- [x] Configurable instance type and scaling values
 
-EC2
+- [x] EC2
 
-Standalone EC2 instance (for testing / access / tooling)
+- [x] Security group with SSH access
 
-Security group with SSH access
+- [x] Terraform Backend
 
-Terraform Backend
+- [x] S3 bucket for remote state
 
-S3 bucket for remote state
-
-DynamoDB table for state locking
+- [x] DynamoDB table for state locking
 (created separately using a bootstrap approach)
 
-Project Structure
+```
+# Project Structure
 .
 ├── main.tf            # All infrastructure resources
 ├── variables.tf       # Input variables
 ├── terraform.tfvars   # Environment-specific values
 ├── backend.tf         # Remote state configuration
 └── README.md
+```
 
 
 This structure keeps things simple but scalable without introducing modules prematurely.
 
 Key Design Decisions (Important)
-1. Remote State Bootstrapping
+
+** 1. Remote State Bootstrapping **
 
 S3 bucket and DynamoDB table are not created in this stack
 
@@ -80,7 +81,7 @@ This avoids circular dependencies and state issues
 
 Reason: Terraform backend must exist before terraform init.
 
-2. Reusability via Variables
+** 2. Reusability via Variables **
 
 Hard-coded values were removed and replaced with variables:
 
@@ -104,7 +105,7 @@ Easy reuse across environments
 
 No code changes between dev / stage / prod
 
-3. Use of count
+** 3. Use of count **
 
 count is used for subnets and route table associations to:
 
@@ -114,7 +115,7 @@ Dynamically create resources based on input lists
 
 Keep the configuration declarative and scalable
 
-4. Tagging Strategy
+** 4. Tagging Strategy **
 
 Tags are applied consistently across resources
 
@@ -122,7 +123,7 @@ Tags are used for ownership, environment identification, and cost tracking
 
 Resource-specific Name tags are used where human readability matters
 
-5. EKS Worker Node Naming (Important Clarification)
+** 5. EKS Worker Node Naming (Important Clarification) **
 
 Worker nodes are managed by Auto Scaling Groups
 
@@ -130,7 +131,7 @@ Fixed names like eks-worker1, eks-worker2 are intentionally not used
 
 Nodes are treated as cattle, not pets
 
-Instead:
+** Instead: **
 
 EC2 Name tags are used for visibility
 
