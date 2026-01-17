@@ -1,4 +1,4 @@
-##Terraform EKS Infrastructure Setup
+## Terraform EKS Infrastructure Setup
 Overview
 
 This repository contains a Terraform-based setup to provision AWS infrastructure and an EKS cluster in a clean, reusable, and production-aligned way.
