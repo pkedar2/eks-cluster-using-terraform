@@ -1,19 +1,19 @@
 ## Terraform EKS Infrastructure Setup
-Overview
+# Overview
 
 This repository contains a Terraform-based setup to provision AWS infrastructure and an EKS cluster in a clean, reusable, and production-aligned way.
 
 The goal of this project was not just to create resources, but to design the infrastructure following real-world DevOps practices:
 
-Remote state management
+- [x] Remote state management
 
-Reusability using variables
+- [x] Reusability using variables
 
-Avoiding Terraform drift
+- [x] Avoiding Terraform drift
 
-Understanding how EKS and autoscaling actually work
+- [x] Understanding how EKS and autoscaling actually work
 
-Respecting cloud-native design principles
+- [x] Respecting cloud-native design principles
 
 What This Project Creates
 
