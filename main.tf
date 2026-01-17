@@ -123,9 +123,6 @@ resource "aws_eks_node_group" "eks_nodes" {
     min_size     = var.node_min
     max_size     = var.node_max
   }
-  tags = {
-  Name = "eks-worker-${count.index + 1}"
-}
 }
 
 
