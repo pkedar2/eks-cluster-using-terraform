@@ -40,15 +40,11 @@ Using Terraform, this setup provisions:
 
 - [x] Required AWS managed policy attachments
 
-- [x] EKS
-
 - [x] EKS cluster
 
 - [x] Managed node group with autoscaling
 
 - [x] Configurable instance type and scaling values
-
-- [x] EC2
 
 - [x] Security group with SSH access
 
